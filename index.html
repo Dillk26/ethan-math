@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethan's Long Division Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts for playful yet clean typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Fredoka', 'sans-serif'],
+            handwriting: ['Kalam', 'cursive']
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom styling for division radical and graph paper background */
+    .division-radical {
+      display: inline-flex;
+      align-items: flex-end;
+      font-size: 2.25rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .radical-divisor {
+      padding-right: 0.35rem;
+    }
+    .radical-bracket {
+      border-top: 3.5px solid #1e293b;
+      border-left: 3.5px solid #1e293b;
+      border-top-left-radius: 0.5rem;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+      padding-top: 0.25rem;
+      margin-left: 0.1rem;
+    }
+    /* Grid paper canvas background */
+    .canvas-grid {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+      background-color: #ffffff;
+    }
+    .canvas-dots {
+      background-size: 20px 20px;
+      background-image: radial-gradient(circle, #cbd5e1 1.2px, transparent 1.2px);
+      background-color: #ffffff;
+    }
+    .canvas-plain {
+      background-color: #ffffff;
+    }
+    /* Confetti animation */
+    @keyframes drop {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .confetti-piece {
+      position: fixed;
+      width: 10px;
+      height: 14px;
+      z-index: 9999;
+      pointer-events: none;
+      animation: drop 2.5s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased select-none">
+
+  <!-- Top App Navigation & Ethan Progress -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- Title & Branding -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white flex items-center justify-center shadow-md shadow-indigo-200 text-lg font-bold">
+          <i class="fa-solid fa-divide"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold font-display text-slate-800 leading-tight">
+            Ethan's Math Studio <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-sans font-semibold tracking-wide">Long Division</span>
+          </h1>
+          <p class="text-xs text-slate-500 hidden sm:block">Step-by-step master course &bull; 25 interactive challenges</p>
+        </div>
+      </div>
+
+      <!-- Stage / Level Pill & Question Selector Quick Button -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        <!-- Stage badge -->
+        <div id="stageBadge" class="text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1.5 border border-emerald-200 shadow-xs">
+          <i class="fa-solid fa-seedling"></i>
+          <span id="stageName">Stage 1: Warm-Up</span>
+        </div>
+
+        <!-- Problem Selector Dropdown Trigger -->
+        <button id="openCatalogBtn" class="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-2 border border-slate-300 transition">
+          <i class="fa-solid fa-list-ol"></i>
+          <span>Questions (25)</span>
+        </button>
+
+        <!-- Sound toggle -->
+        <button id="soundToggleBtn" title="Toggle Sound FX" class="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+          <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Overall Progress bar -->
+    <div class="w-full bg-slate-200 h-1.5">
+      <div id="topProgressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 h-1.5 transition-all duration-300 w-0"></div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout (Split Screen: Problem & Steps on Left, Live Canvas on Right) -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- LEFT COLUMN: Problem Workspace & DMSB Guide (5 Cols on LG) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- Question Card -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col gap-4">
+        <!-- Question Header & Navigation -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Question</span>
+            <span id="questionNumberPill" class="text-sm font-extrabold px-2.5 py-0.5 rounded-md bg-indigo-600 text-white shadow-xs">1 / 25</span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="prevBtn" class="p-2 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition disabled:opacity-30 disabled:pointer-events-none" title="Previous Question">
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <button id="nextBtn" class="p-2 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition disabled:opacity-30 disabled:pointer-events-none" title="Next Question">
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Question Prompt & Difficulty Notes -->
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span id="levelDifficultyTag" class="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-600 uppercase tracking-wide">Single Digit Divisor</span>
+            <span id="qStatusTag" class="hidden text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 uppercase tracking-wide">
+              <i class="fa-solid fa-circle-check mr-1"></i>Solved!
+            </span>
+          </div>
+          <h2 id="questionPrompt" class="text-base sm:text-lg font-bold text-slate-800">
+            Ethan, solve 68 ÷ 2 using long division!
+          </h2>
+          <p id="questionHintSummary" class="text-xs text-slate-500 mt-1">
+            Break it into steps: How many times does 2 go into 6? Then bring down the 8!
+          </p>
+        </div>
+
+        <!-- Visual Long Division Bracket Box -->
+        <div class="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100 flex flex-col items-center justify-center relative overflow-hidden">
+          <div class="text-xs text-indigo-400 font-semibold uppercase tracking-wider mb-2">Long Division Format</div>
+          <div class="division-radical text-slate-800 py-1">
+            <span id="displayDivisor" class="radical-divisor font-mono font-bold text-3xl sm:text-4xl text-indigo-700">2</span>
+            <div class="radical-bracket flex flex-col">
+              <span id="displayDividend" class="font-mono font-bold text-3xl sm:text-4xl text-slate-900 tracking-wider">68</span>
+            </div>
+          </div>
+          <div class="text-xs text-slate-400 mt-2 font-handwriting text-base">"Write your steps on Ethan's scratchpad 👉"</div>
+        </div>
+
+        <!-- Interactive Answer Inputs -->
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+          <div class="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide flex items-center justify-between">
+            <span>Ethan's Answer</span>
+            <span class="text-[11px] text-slate-400 font-normal">Type final result</span>
+          </div>
+
+          <!-- Dynamic Input Forms: either Quotient+Remainder or Decimal -->
+          <div id="standardInputContainer" class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Quotient (Q)</label>
+              <input type="number" id="inputQuotient" step="any" placeholder="e.g. 34" 
+                class="w-full px-3 py-2 text-center text-lg font-bold font-mono bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+            </div>
+            <div id="remainderFieldWrapper">
+              <label class="block text-xs font-medium text-slate-600 mb-1">Remainder (R)</label>
+              <input type="number" id="inputRemainder" placeholder="0 if none" 
+                class="w-full px-3 py-2 text-center text-lg font-bold font-mono bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+            </div>
+          </div>
+
+          <!-- Decimal Input Form (Visible for Decimal problems) -->
+          <div id="decimalInputContainer" class="hidden">
+            <label class="block text-xs font-medium text-slate-600 mb-1">Decimal Answer</label>
+            <input type="text" id="inputDecimal" placeholder="e.g. 7.5 or 15.75" 
+              class="w-full px-3 py-2 text-center text-lg font-bold font-mono bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+          </div>
+
+          <!-- Action buttons -->
+          <div class="mt-3 flex gap-2">
+            <button id="checkAnswerBtn" class="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white rounded-lg font-semibold text-sm shadow-md shadow-indigo-200 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-check"></i>
+              <span>Check Answer</span>
+            </button>
+            <button id="toggleStepsBtn" class="py-2.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-semibold text-xs transition flex items-center gap-1.5" title="Step-by-step walkthrough">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+              <span id="stepsBtnText">Show Steps</span>
+            </button>
+          </div>
+
+          <!-- Answer Feedback Banner -->
+          <div id="feedbackBanner" class="hidden mt-3 p-3 rounded-lg text-xs font-medium transition flex items-center gap-2">
+            <i id="feedbackIcon" class="fa-solid fa-circle-check text-base"></i>
+            <span id="feedbackText">Great job Ethan! That's correct!</span>
+          </div>
+        </div>
+
+        <!-- Mnemonic Helper: DMSB -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-amber-50/40">
+          <div class="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> The Golden 4 Steps (D-M-S-B)</span>
+            <span class="text-[10px] text-amber-700/80 font-normal">Remember the family!</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1 text-center text-xs mt-1.5 font-medium">
+            <div class="bg-white p-1.5 rounded-lg border border-amber-200/80 shadow-xs">
+              <span class="font-bold text-indigo-600 block">D</span>
+              <span class="text-[10px] text-slate-500">Divide</span>
+            </div>
+            <div class="bg-white p-1.5 rounded-lg border border-amber-200/80 shadow-xs">
+              <span class="font-bold text-purple-600 block">M</span>
+              <span class="text-[10px] text-slate-500">Multiply</span>
+            </div>
+            <div class="bg-white p-1.5 rounded-lg border border-amber-200/80 shadow-xs">
+              <span class="font-bold text-rose-600 block">S</span>
+              <span class="text-[10px] text-slate-500">Subtract</span>
+            </div>
+            <div class="bg-white p-1.5 rounded-lg border border-amber-200/80 shadow-xs">
+              <span class="font-bold text-emerald-600 block">B</span>
+              <span class="text-[10px] text-slate-500">Bring Down</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Step-by-Step Breakdown Accordion (Expandable) -->
+      <div id="stepGuidePanel" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col gap-3 transition">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-shoe-prints text-indigo-500"></i>
+            <span>Teacher's Step-by-Step Walkthrough</span>
+          </h3>
+          <span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono font-medium">Step Guide</span>
+        </div>
+        <div id="stepsList" class="flex flex-col gap-2.5 text-xs text-slate-700">
+          <!-- Dynamically populated steps -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Drawing Board / Whiteboard Canvas (7 Cols on LG) -->
+    <section class="lg:col-span-7 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-1 min-h-[550px]">
+      
+      <!-- Canvas Toolbar -->
+      <div class="bg-slate-50 border-b border-slate-200 p-2 sm:p-3 flex flex-wrap items-center justify-between gap-2 z-10">
+        <!-- Drawing Tools: Pen, Eraser, Highlighter -->
+        <div class="flex items-center gap-1">
+          <button id="toolPen" class="tool-btn active-tool px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-xs flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-pen"></i>
+            <span class="hidden sm:inline">Pen</span>
+          </button>
+          <button id="toolHighlighter" class="tool-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-highlighter text-amber-500"></i>
+            <span class="hidden sm:inline">Highlight</span>
+          </button>
+          <button id="toolEraser" class="tool-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-eraser text-rose-500"></i>
+            <span class="hidden sm:inline">Eraser</span>
+          </button>
+        </div>
+
+        <!-- Color Palette -->
+        <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200">
+          <button data-color="#1e293b" class="color-picker-btn w-6 h-6 rounded-full bg-slate-800 ring-2 ring-indigo-500 transition" title="Dark Slate"></button>
+          <button data-color="#2563eb" class="color-picker-btn w-6 h-6 rounded-full bg-blue-600 hover:scale-110 transition" title="Blue"></button>
+          <button data-color="#dc2626" class="color-picker-btn w-6 h-6 rounded-full bg-red-600 hover:scale-110 transition" title="Red (Remainders/Subtractions)"></button>
+          <button data-color="#16a34a" class="color-picker-btn w-6 h-6 rounded-full bg-green-600 hover:scale-110 transition" title="Green (Quotients)"></button>
+          <button data-color="#9333ea" class="color-picker-btn w-6 h-6 rounded-full bg-purple-600 hover:scale-110 transition" title="Purple"></button>
+        </div>
+
+        <!-- Stroke Width selector -->
+        <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 text-xs">
+          <span class="text-[10px] text-slate-400 font-bold uppercase mr-1">Size</span>
+          <button data-size="2" class="size-btn w-6 h-6 rounded flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100">S</button>
+          <button data-size="4" class="size-btn w-6 h-6 rounded flex items-center justify-center font-bold bg-indigo-100 text-indigo-700">M</button>
+          <button data-size="8" class="size-btn w-6 h-6 rounded flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100">L</button>
+        </div>
+
+        <!-- Canvas Background (Grid / Dots / Blank) & Utility actions -->
+        <div class="flex items-center gap-1">
+          <button id="toggleGridBtn" title="Toggle Grid Lines (Keeps Ethan's columns aligned!)" class="px-2 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 flex items-center gap-1">
+            <i class="fa-solid fa-border-all"></i>
+            <span class="hidden md:inline">Grid</span>
+          </button>
+          <button id="undoBtn" title="Undo stroke" class="w-8 h-8 rounded-lg bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 flex items-center justify-center transition">
+            <i class="fa-solid fa-rotate-left text-xs"></i>
+          </button>
+          <button id="clearCanvasBtn" title="Clear Canvas" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 flex items-center gap-1 transition">
+            <i class="fa-solid fa-trash-can"></i>
+            <span class="hidden sm:inline">Clear</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Canvas Area Wrapper -->
+      <div id="canvasContainer" class="relative flex-1 w-full h-full min-h-[460px] overflow-hidden canvas-grid cursor-crosshair">
+        <canvas id="paintCanvas" class="absolute inset-0 w-full h-full touch-none"></canvas>
+        
+        <!-- Helpful Scratchpad Watermark / Notice -->
+        <div class="pointer-events-none absolute bottom-3 right-4 text-xs font-handwriting text-slate-400 select-none flex items-center gap-1.5">
+          <i class="fa-solid fa-pen-nib"></i> Ethan's scratchpad &bull; Draw freely or align numbers with the grid
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Question Catalog Modal (25 Questions Grid) -->
+  <div id="catalogModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div>
+          <h3 class="font-display text-lg font-bold text-slate-800">Ethan's Curriculum: 25 Long Division Challenges</h3>
+          <p class="text-xs text-slate-500">Pick any question to jump directly to it!</p>
+        </div>
+        <button id="closeCatalogBtn" class="w-8 h-8 rounded-lg bg-white text-slate-400 hover:text-slate-600 border border-slate-200 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Question Grid list -->
+      <div class="p-4 sm:p-5 overflow-y-auto flex flex-col gap-4">
+        
+        <!-- Stage 1 -->
+        <div>
+          <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-seedling"></i> Stage 1: Warm Up & No Remainder (Q1 - Q5)
+          </div>
+          <div id="catalogStage1" class="grid grid-cols-5 gap-2"></div>
+        </div>
+
+        <!-- Stage 2 -->
+        <div>
+          <div class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-shapes"></i> Stage 2: Introducing Remainders (Q6 - Q10)
+          </div>
+          <div id="catalogStage2" class="grid grid-cols-5 gap-2"></div>
+        </div>
+
+        <!-- Stage 3 -->
+        <div>
+          <div class="text-xs font-bold text-purple-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-calculator"></i> Stage 3: Larger Dividends & The Zero Trap (Q11 - Q15)
+          </div>
+          <div id="catalogStage3" class="grid grid-cols-5 gap-2"></div>
+        </div>
+
+        <!-- Stage 4 -->
+        <div>
+          <div class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-dot"></i> Stage 4: Decimal Point Division (Q16 - Q20)
+          </div>
+          <div id="catalogStage4" class="grid grid-cols-5 gap-2"></div>
+        </div>
+
+        <!-- Stage 5 -->
+        <div>
+          <div class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-trophy"></i> Stage 5: Grand Master (2-Digit Divisors & Decimals) (Q21 - Q25)
+          </div>
+          <div id="catalogStage5" class="grid grid-cols-5 gap-2"></div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+        <span id="completedCountLabel">0 of 25 completed</span>
+        <button id="resetAllProgressBtn" class="text-rose-500 hover:text-rose-700 underline font-medium">Reset Progress</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Context Synthesizer (Zero External Audio Dependencies) -->
+  <script>
+    // Audio engine using Web Audio API
+    class MathAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playTone(freq, type, duration, gainVal = 0.1) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {
+          console.warn("Audio play error", e);
+        }
+      }
+      success() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 fanfare
+        notes.forEach((freq, idx) => {
+          setTimeout(() => {
+            this.playTone(freq, 'triangle', 0.25, 0.15);
+          }, idx * 90);
+        });
+      }
+      error() {
+        if (!this.enabled) return;
+        this.playTone(220, 'sawtooth', 0.28, 0.15);
+      }
+      click() {
+        if (!this.enabled) return;
+        this.playTone(600, 'sine', 0.05, 0.05);
+      }
+    }
+    const audioEngine = new MathAudioEngine();
+  </script>
+
+  <!-- Application Logic & Question Dataset -->
+  <script>
+    /* ========================================================
+       25 CURATED LONG DIVISION QUESTIONS FOR ETHAN
+       Graduated step-by-step from easy to hard decimals
+    ======================================================== */
+    const QUESTIONS = [
+      // STAGE 1: Foundational, clean divisions & simple regrouping
+      {
+        id: 1,
+        dividend: 36,
+        divisor: 3,
+        quotient: 12,
+        remainder: 0,
+        isDecimal: false,
+        stage: 1,
+        stageName: "Stage 1: Warm-Up",
+        prompt: "Divide 36 by 3",
+        hint: "Start with the tens: 3 ÷ 3 = 1. Then divide the ones: 6 ÷ 3 = 2!",
+        steps: [
+          "Divide: How many 3s fit into 3? Exactly 1. Write 1 above the 3.",
+          "Multiply: 1 × 3 = 3. Subtract: 3 - 3 = 0.",
+          "Bring down the 6.",
+          "Divide: 6 ÷ 3 = 2. Place 2 above the 6.",
+          "Multiply: 2 × 3 = 6. Subtract: 6 - 6 = 0. No remainder! Answer: 12."
+        ]
+      },
+      {
+        id: 2,
+        dividend: 86,
+        divisor: 2,
+        quotient: 43,
+        remainder: 0,
+        isDecimal: false,
+        stage: 1,
+        stageName: "Stage 1: Warm-Up",
+        prompt: "Divide 86 by 2",
+        hint: "2 goes into 8 four times, then 2 goes into 6 three times.",
+        steps: [
+          "Divide 8 by 2: 8 ÷ 2 = 4. Write 4 on top above 8.",
+          "Multiply: 4 × 2 = 8. Subtract: 8 - 8 = 0.",
+          "Bring down the 6.",
+          "Divide: 6 ÷ 2 = 3. Write 3 on top above 6.",
+          "Multiply: 3 × 2 = 6. Subtract: 6 - 6 = 0. Answer: 43."
+        ]
+      },
+      {
+        id: 3,
+        dividend: 96,
+        divisor: 3,
+        quotient: 32,
+        remainder: 0,
+        isDecimal: false,
+        stage: 1,
+        stageName: "Stage 1: Warm-Up",
+        prompt: "Divide 96 by 3",
+        hint: "Divide 9 by 3 first, then divide 6 by 3.",
+        steps: [
+          "9 ÷ 3 = 3. Place 3 on the quotient line above 9.",
+          "Multiply: 3 × 3 = 9. Subtract: 9 - 9 = 0.",
+          "Bring down the 6.",
+          "6 ÷ 3 = 2. Place 2 above the 6.",
+          "Multiply: 2 × 3 = 6. Subtract: 6 - 6 = 0. Final answer: 32."
+        ]
+      },
+      {
+        id: 4,
+        dividend: 64,
+        divisor: 4,
+        quotient: 16,
+        remainder: 0,
+        isDecimal: false,
+        stage: 1,
+        stageName: "Stage 1: Regrouping",
+        prompt: "Divide 64 by 4",
+        hint: "4 fits into 6 one time with 2 left over. Regroup the 2 with the 4 to make 24!",
+        steps: [
+          "How many 4s in 6? Just 1 (1 × 4 = 4). Write 1 above 6.",
+          "Subtract: 6 - 4 = 2.",
+          "Bring down the 4 to stand next to 2, making 24.",
+          "Divide: 24 ÷ 4 = 6. Place 6 above the 4.",
+          "Multiply: 6 × 4 = 24. Subtract: 24 - 24 = 0. Answer: 16."
+        ]
+      },
+      {
+        id: 5,
+        dividend: 91,
+        divisor: 7,
+        quotient: 13,
+        remainder: 0,
+        isDecimal: false,
+        stage: 1,
+        stageName: "Stage 1: Regrouping",
+        prompt: "Divide 91 by 7",
+        hint: "How many 7s in 9? 1 with 2 left over. Bring down 1 to make 21.",
+        steps: [
+          "9 ÷ 7 = 1 with a remainder of 2. Place 1 above the 9.",
+          "Multiply: 1 × 7 = 7. Subtract: 9 - 7 = 2.",
+          "Bring down the 1 to make 21.",
+          "21 ÷ 7 = 3. Place 3 above the 1.",
+          "Multiply: 3 × 7 = 21. Subtract: 21 - 21 = 0. Answer: 13."
+        ]
+      },
+
+      // STAGE 2: Remainders & 3-Digit Dividends
+      {
+        id: 6,
+        dividend: 47,
+        divisor: 3,
+        quotient: 15,
+        remainder: 2,
+        isDecimal: false,
+        stage: 2,
+        stageName: "Stage 2: Remainders",
+        prompt: "Divide 47 by 3 (Find Quotient & Remainder)",
+        hint: "3 fits into 4 once. Bring down 7 to make 17. 3 × 5 = 15.",
+        steps: [
+          "4 ÷ 3 = 1. Put 1 above the 4.",
+          "Multiply: 1 × 3 = 3. Subtract: 4 - 3 = 1.",
+          "Bring down the 7 to make 17.",
+          "17 ÷ 3 = 5 (since 5 × 3 = 15). Put 5 above the 7.",
+          "Subtract: 17 - 15 = 2.",
+          "No more digits to bring down! Remainder is 2. Answer: 15 R 2."
+        ]
+      },
+      {
+        id: 7,
+        dividend: 87,
+        divisor: 5,
+        quotient: 17,
+        remainder: 2,
+        isDecimal: false,
+        stage: 2,
+        stageName: "Stage 2: Remainders",
+        prompt: "Divide 87 by 5 (Find Quotient & Remainder)",
+        hint: "5 goes into 8 once with 3 left over. 5 × 7 = 35.",
+        steps: [
+          "8 ÷ 5 = 1. Put 1 above the 8.",
+          "Multiply: 1 × 5 = 5. Subtract: 8 - 5 = 3.",
+          "Bring down the 7 to make 37.",
+          "37 ÷ 5 = 7 (since 7 × 5 = 35). Put 7 above the 7.",
+          "Subtract: 37 - 35 = 2. Remainder is 2. Answer: 17 R 2."
+        ]
+      },
+      {
+        id: 8,
+        dividend: 144,
+        divisor: 4,
+        quotient: 36,
+        remainder: 0,
+        isDecimal: false,
+        stage: 2,
+        stageName: "Stage 2: 3-Digit Dividends",
+        prompt: "Divide 144 by 4",
+        hint: "4 cannot go into 1, so look at 14! 4 × 3 = 12.",
+        steps: [
+          "4 doesn't fit into 1, so look at the first two digits: 14.",
+          "14 ÷ 4 = 3 (since 3 × 4 = 12). Place 3 above the 4.",
+          "Subtract: 14 - 12 = 2.",
+          "Bring down the 4 to make 24.",
+          "24 ÷ 4 = 6. Place 6 above the 4.",
+          "Multiply: 6 × 4 = 24. Subtract: 24 - 24 = 0. Answer: 36."
+        ]
+      },
+      {
+        id: 9,
+        dividend: 238,
+        divisor: 7,
+        quotient: 34,
+        remainder: 0,
+        isDecimal: false,
+        stage: 2,
+        stageName: "Stage 2: 3-Digit Dividends",
+        prompt: "Divide 238 by 7",
+        hint: "Start with 23. 7 × 3 = 21. Regroup and bring down the 8.",
+        steps: [
+          "7 cannot go into 2, so start with 23.",
+          "23 ÷ 7 = 3 (since 3 × 7 = 21). Put 3 above the 3.",
+          "Subtract: 23 - 21 = 2.",
+          "Bring down the 8 to make 28.",
+          "28 ÷ 7 = 4. Put 4 above the 8.",
+          "Multiply: 4 × 7 = 28. Subtract: 28 - 28 = 0. Answer: 34."
+        ]
+      },
+      {
+        id: 10,
+        dividend: 349,
+        divisor: 6,
+        quotient: 58,
+        remainder: 1,
+        isDecimal: false,
+        stage: 2,
+        stageName: "Stage 2: 3-Digit with Remainder",
+        prompt: "Divide 349 by 6 (Find Quotient & Remainder)",
+        hint: "6 into 34 goes 5 times (30). Bring down the 9 to make 49.",
+        steps: [
+          "6 does not fit into 3. Into 34, it fits 5 times (5 × 6 = 30). Put 5 above the 4.",
+          "Subtract: 34 - 30 = 4.",
+          "Bring down the 9 to make 49.",
+          "49 ÷ 6 = 8 (since 8 × 6 = 48). Put 8 above the 9.",
+          "Subtract: 49 - 48 = 1. Remainder is 1. Answer: 58 R 1."
+        ]
+      },
+
+      // STAGE 3: The Zero Trap & 4-Digit Dividends
+      {
+        id: 11,
+        dividend: 618,
+        divisor: 3,
+        quotient: 206,
+        remainder: 0,
+        isDecimal: false,
+        stage: 3,
+        stageName: "Stage 3: The Zero Trap",
+        prompt: "Divide 618 by 3 (Watch out for the zero!)",
+        hint: "CAREFUL: When you bring down the 1, 3 goes into 1 ZERO times! Don't forget the 0!",
+        steps: [
+          "6 ÷ 3 = 2. Place 2 above the 6. 2 × 3 = 6. Subtract: 6 - 6 = 0.",
+          "Bring down the 1. Ask: Does 3 fit into 1? NO (0 times)!",
+          "Ethan, you MUST write 0 in the quotient above the 1!",
+          "Now bring down the 8 to make 18.",
+          "18 ÷ 3 = 6. Place 6 above the 8.",
+          "Multiply: 6 × 3 = 18. Subtract: 18 - 18 = 0. Answer: 206 (not 26!)."
+        ]
+      },
+      {
+        id: 12,
+        dividend: 832,
+        divisor: 8,
+        quotient: 104,
+        remainder: 0,
+        isDecimal: false,
+        stage: 3,
+        stageName: "Stage 3: The Zero Trap",
+        prompt: "Divide 832 by 8",
+        hint: "8 goes into 8 once. 8 into 3 goes 0 times! Put a 0 on top before bringing down 2.",
+        steps: [
+          "8 ÷ 8 = 1. Write 1 above the 8.",
+          "Multiply: 1 × 8 = 8. Subtract: 8 - 8 = 0.",
+          "Bring down the 3. 8 into 3 goes 0 times, so write 0 above the 3!",
+          "Bring down the 2 to make 32.",
+          "32 ÷ 8 = 4. Put 4 above the 2.",
+          "Multiply: 4 × 8 = 32. Subtract: 32 - 32 = 0. Answer: 104."
+        ]
+      },
+      {
+        id: 13,
+        dividend: 921,
+        divisor: 3,
+        quotient: 307,
+        remainder: 0,
+        isDecimal: false,
+        stage: 3,
+        stageName: "Stage 3: The Zero Trap",
+        prompt: "Divide 921 by 3",
+        hint: "9 ÷ 3 = 3. When you bring down 2, 3 into 2 is 0. Keep the place value!",
+        steps: [
+          "9 ÷ 3 = 3. Put 3 above the 9.",
+          "Multiply: 3 × 3 = 9. Subtract: 9 - 9 = 0.",
+          "Bring down the 2. 3 into 2 goes 0 times. Put 0 above the 2!",
+          "Bring down the 1 to make 21.",
+          "21 ÷ 3 = 7. Put 7 above the 1.",
+          "Multiply: 7 × 3 = 21. Subtract: 21 - 21 = 0. Answer: 307."
+        ]
+      },
+      {
+        id: 14,
+        dividend: 817,
+        divisor: 4,
+        quotient: 204,
+        remainder: 1,
+        isDecimal: false,
+        stage: 3,
+        stageName: "Stage 3: Zero Trap + Remainder",
+        prompt: "Divide 817 by 4 (Find Quotient & Remainder)",
+        hint: "8 ÷ 4 = 2. 4 into 1 goes 0 times! Bring down 7 to make 17.",
+        steps: [
+          "8 ÷ 4 = 2. Put 2 above the 8. Subtract: 8 - 8 = 0.",
+          "Bring down the 1. 4 into 1 goes 0 times! Put 0 above the 1.",
+          "Bring down the 7 to make 17.",
+          "17 ÷ 4 = 4 (since 4 × 4 = 16). Put 4 above the 7.",
+          "Subtract: 17 - 16 = 1. Remainder is 1. Answer: 204 R 1."
+        ]
+      },
+      {
+        id: 15,
+        dividend: 4836,
+        divisor: 6,
+        quotient: 806,
+        remainder: 0,
+        isDecimal: false,
+        stage: 3,
+        stageName: "Stage 3: 4-Digit Dividends",
+        prompt: "Divide 4,836 by 6",
+        hint: "Start with 48. Then look what happens when you bring down 3!",
+        steps: [
+          "6 into 4 doesn't go. 6 into 48 goes 8 times (8 × 6 = 48). Place 8 above the 8.",
+          "Subtract: 48 - 48 = 0.",
+          "Bring down 3. 6 into 3 goes 0 times! Put 0 above the 3.",
+          "Bring down 6 to make 36.",
+          "36 ÷ 6 = 6. Put 6 above the 6.",
+          "Multiply: 6 × 6 = 36. Subtract: 36 - 36 = 0. Answer: 806."
+        ]
+      },
+
+      // STAGE 4: Decimal Point Division
+      {
+        id: 16,
+        dividend: 38,
+        divisor: 4,
+        quotient: 9.5,
+        remainder: 0,
+        isDecimal: true,
+        decimalAnswer: "9.5",
+        stage: 4,
+        stageName: "Stage 4: Decimal Point Intro",
+        prompt: "Divide 38 by 4 (Express answer as a Decimal!)",
+        hint: "38 ÷ 4 is 9 with 2 leftover. Add a decimal point '.' and write 38.0 to bring down the 0!",
+        steps: [
+          "38 ÷ 4 = 9 (since 9 × 4 = 36). Place 9 above the 8.",
+          "Subtract: 38 - 36 = 2.",
+          "Instead of a remainder, place a decimal point after 9 (9.) and after 38 (38.0).",
+          "Bring down the 0 to make 20.",
+          "20 ÷ 4 = 5. Place 5 right after the decimal point.",
+          "Final decimal answer: 9.5!"
+        ]
+      },
+      {
+        id: 17,
+        dividend: 45,
+        divisor: 2,
+        quotient: 22.5,
+        remainder: 0,
+        isDecimal: true,
+        decimalAnswer: "22.5",
+        stage: 4,
+        stageName: "Stage 4: Decimals from Remainder",
+        prompt: "Divide 45 by 2 (Express answer as a Decimal)",
+        hint: "Divide normally to get 22. Then add '.0' to divide the remaining 1!",
+        steps: [
+          "4 ÷ 2 = 2. 4 - 4 = 0. Bring down 5.",
+          "5 ÷ 2 = 2 (2 × 2 = 4). 5 - 4 = 1.",
+          "Put a decimal point after 22 (22.) and turn 45 into 45.0.",
+          "Bring down 0 to make 10.",
+          "10 ÷ 2 = 5. Place 5 after the decimal point.",
+          "Final answer: 22.5."
+        ]
+      },
+      {
+        id: 18,
+        dividend: 51,
+        divisor: 4,
+        quotient: 12.75,
+        remainder: 0,
+        isDecimal: true,
+        decimalAnswer: "12.75",
+        stage: 4,
+        stageName: "Stage 4: Two Decimal Places",
+        prompt: "Divide 51 by 4 (Express answer as a Decimal)",
+        hint: "Add two zeroes after the decimal point: 51.00 until the remainder becomes zero!",
+        steps: [
+          "5 ÷ 4 = 1. 5 - 4 = 1. Bring down 1 to make 11.",
+          "11 ÷ 4 = 2 (2 × 4 = 8). 11 - 8 = 3.",
+          "Put a decimal point in the quotient (12.) and write 51.00.",
+          "Bring down the first 0 to make 30: 30 ÷ 4 = 7 (28). 30 - 28 = 2.",
+          "Bring down the second 0 to make 20: 20 ÷ 4 = 5 (20). 20 - 20 = 0!",
+          "Ethan's answer: 12.75."
+        ]
+      },
+      {
+        id: 19,
+        dividend: 28.5,
+        divisor: 3,
+        quotient: 9.5,
+        remainder: 0,
+        isDecimal: true,
+        decimalAnswer: "9.5",
+        stage: 4,
+        stageName: "Stage 4: Decimal in Dividend",
+        prompt: "Divide 28.5 by 3",
+        hint: "Float the decimal point STRAIGHT UP into the answer space before you divide!",
+        steps: [
+          "First, copy the decimal point straight up above the decimal in 28.5.",
+          "Divide 28 by 3 = 9 (since 9 × 3 = 27). Put 9 before the decimal point.",
+          "Subtract: 28 - 27 = 1.",
+          "Bring down 5 to make 15.",
+          "15 ÷ 3 = 5. Place 5 after the decimal point.",
+          "Final answer: 9.5."
+        ]
+      },
+      {
+        id: 20,
+        dividend: 67.2,
+        divisor: 8,
+        quotient: 8.4,
+        remainder: 0,
+        isDecimal: true,
+        decimalAnswer: "8.4",
+        stage: 4,
+        stageName: "Stage 4: Decimal Mastery",
+        prompt: "Divide 67.2 by 8",
+        hint: "Float the decimal point up! How many 8s in 67? 8 × 8 = 64.",
+        steps: [
+          "Float the decimal straight up into the quotient space.",
+          "67 ÷ 8 = 8 (8 × 8 = 64). Place 8 before the decimal point.",
+          "Subtract: 67 - 64 = 3.",
+          "Bring down 2 to make 32.",
+          "32 ÷ 8 = 4. Place 4 after the decimal point.",
+          "Final answer: 8.4."
+        ]
+      },
+
+      // STAGE 5: 2-Digit Divisors & Grand Challenges
+      {
+        id: 21,
+        dividend: 195,
+        divisor: 13,
+        quotient: 15,
+        remainder: 0,
+        isDecimal: false,
+        stage: 5,
+        stageName: "Stage 5: 2-Digit Divisor",
+        prompt: "Divide 195 by 13",
+        hint: "Dividing by 13! 13 into 19 goes 1 time with 6 left over.",
+        steps: [
+          "13 into 19 goes 1 time (1 × 13 = 13). Put 1 above the 9.",
+          "Subtract: 19 - 13 = 6.",
+          "Bring down 5 to make 65.",
+          "How many 13s in 65? Count by 13: 13, 26, 39, 52, 65 (5 times!).",
+          "Put 5 above the 5. 5 × 13 = 65. Subtract: 65 - 65 = 0. Answer: 15."
+        ]
+      },
+      {
+        id: 22,
+        dividend: 375,
+        divisor: 15,
+        quotient: 25,
+        remainder: 0,
+        isDecimal: false,
+        stage: 5,
+        stageName: "Stage 5: 2-Digit Divisor",
+        prompt: "Divide 375 by 15",
+        hint: "Think: 15 × 2 = 30. How close can we get to 37?",
+        steps: [
+          "15 fits into 37 two times (2 × 15 = 30). Put 2 above the 7.",
+          "Subtract: 37 - 30 = 7.",
+          "Bring down 5 to make 75.",
+          "15 fits into 75 exactly 5 times (5 × 15 = 75). Put 5 above the 5.",
+          "Multiply: 5 × 15 = 75. Subtract: 75 - 75 = 0. Answer: 25."
+        ]
+      },
+      {
+        id: 23,
+        dividend: 504,
+        divisor: 21,
+        quotient: 24,
+        remainder: 0,
+        isDecimal: false,
+        stage: 5,
+        stageName: "Stage 5: 2-Digit Divisor",
+        prompt: "Divide 504 by 21",
+        hint: "How many 21s in 50? 21 × 2 = 42. Bring down 4 to make 84.",
+        steps: [
+          "21 fits into 50 two times (2 × 21 = 42). Put 2 above the 0.",
+          "Subtract: 50 - 42 = 8.",
+          "Bring down 4 to make 84.",
+          "21 fits into 84 exactly 4 times (4 × 21 = 84). Put 4 above the 4.",
+          "Multiply: 4 × 21 = 84. Subtract: 84 - 84 = 0. Answer: 24."
+        ]
+      },
+      {
+        id: 24,
+        dividend: 94.8,
+        divisor: 12,
+        quotient: 7.9,
+        remainder: 0,
+        isDecimal: true,
+        decimalAnswer: "7.9",
+        stage: 5,
+        stageName: "Stage 5: 2-Digit Divisor + Decimals",
+        prompt: "Divide 94.8 by 12",
+        hint: "Float the decimal point up! How many 12s fit into 94? 12 × 7 = 84.",
+        steps: [
+          "Float the decimal point straight up above the dot in 94.8.",
+          "94 ÷ 12 = 7 (since 7 × 12 = 84). Put 7 before the decimal point.",
+          "Subtract: 94 - 84 = 10.",
+          "Bring down 8 to make 108.",
+          "12 fits into 108 exactly 9 times (9 × 12 = 108). Put 9 after the decimal point.",
+          "Final answer: 7.9!"
+        ]
+      },
+      {
+        id: 25,
+        dividend: 273,
+        divisor: 14,
+        quotient: 19.5,
+        remainder: 0,
+        isDecimal: true,
+        decimalAnswer: "19.5",
+        stage: 5,
+        stageName: "Stage 5: The Grand Finale",
+        prompt: "Divide 273 by 14 (Championship Challenge - Decimals!)",
+        hint: "Ethan's ultimate division challenge! Use decimals and a trailing zero to finish with 0 remainder.",
+        steps: [
+          "27 ÷ 14 = 1 (1 × 14 = 14). Put 1 above the 7. 27 - 14 = 13. Bring down 3 to make 133.",
+          "133 ÷ 14 = 9 (since 9 × 14 = 126). Put 9 above the 3. 133 - 126 = 7.",
+          "Place a decimal point in the quotient (19.) and write 273.0.",
+          "Bring down the 0 to make 70.",
+          "70 ÷ 14 = 5 (since 5 × 14 = 70). Put 5 after the decimal point.",
+          "Subtract: 70 - 70 = 0! Ethan is an official Long Division Champion! Final answer: 19.5."
+        ]
+      }
+    ];
+
+    /* ========================================================
+       STATE MANAGEMENT
+    ======================================================== */
+    let currentQuestionIndex = 0;
+    let completedQuestions = new Set();
+
+    // Load saved progress from localStorage if present
+    try {
+      const saved = localStorage.getItem('ethan_math_division_completed');
+      if (saved) {
+        completedQuestions = new Set(JSON.parse(saved));
+      }
+    } catch(e) {
+      console.log("Storage not active");
+    }
+
+    /* ========================================================
+       DOM ELEMENTS
+    ======================================================== */
+    const stageBadge = document.getElementById('stageBadge');
+    const stageName = document.getElementById('stageName');
+    const questionNumberPill = document.getElementById('questionNumberPill');
+    const levelDifficultyTag = document.getElementById('levelDifficultyTag');
+    const qStatusTag = document.getElementById('qStatusTag');
+    const questionPrompt = document.getElementById('questionPrompt');
+    const questionHintSummary = document.getElementById('questionHintSummary');
+    const displayDivisor = document.getElementById('displayDivisor');
+    const displayDividend = document.getElementById('displayDividend');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const topProgressBar = document.getElementById('topProgressBar');
+
+    // Answer Inputs
+    const standardInputContainer = document.getElementById('standardInputContainer');
+    const decimalInputContainer = document.getElementById('decimalInputContainer');
+    const inputQuotient = document.getElementById('inputQuotient');
+    const inputRemainder = document.getElementById('inputRemainder');
+    const inputDecimal = document.getElementById('inputDecimal');
+    const remainderFieldWrapper = document.getElementById('remainderFieldWrapper');
+    const checkAnswerBtn = document.getElementById('checkAnswerBtn');
+    const feedbackBanner = document.getElementById('feedbackBanner');
+    const feedbackText = document.getElementById('feedbackText');
+    const feedbackIcon = document.getElementById('feedbackIcon');
+
+    // Steps Walkthrough
+    const toggleStepsBtn = document.getElementById('toggleStepsBtn');
+    const stepsBtnText = document.getElementById('stepsBtnText');
+    const stepGuidePanel = document.getElementById('stepGuidePanel');
+    const stepsList = document.getElementById('stepsList');
+
+    // Catalog Modal
+    const openCatalogBtn = document.getElementById('openCatalogBtn');
+    const closeCatalogBtn = document.getElementById('closeCatalogBtn');
+    const catalogModal = document.getElementById('catalogModal');
+    const completedCountLabel = document.getElementById('completedCountLabel');
+    const resetAllProgressBtn = document.getElementById('resetAllProgressBtn');
+
+    // Sound toggle
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+
+    /* ========================================================
+       RENDER QUESTION
+    ======================================================== */
+    function renderQuestion(index) {
+      currentQuestionIndex = index;
+      const q = QUESTIONS[index];
+
+      // Update question badges
+      questionNumberPill.textContent = `${q.id} / 25`;
+      stageName.textContent = q.stageName;
+      levelDifficultyTag.textContent = `Stage ${q.stage}: ${q.isDecimal ? 'Decimals' : (q.remainder > 0 ? 'Remainders' : 'Whole Numbers')}`;
+      questionPrompt.textContent = `Ethan: ${q.prompt}`;
+      questionHintSummary.textContent = q.hint;
+
+      // Update Radical Display
+      displayDivisor.textContent = q.divisor;
+      displayDividend.textContent = q.dividend;
+
+      // Update Solved Status tag
+      if (completedQuestions.has(q.id)) {
+        qStatusTag.classList.remove('hidden');
+      } else {
+        qStatusTag.classList.add('hidden');
+      }
+
+      // Input field configurations
+      feedbackBanner.classList.add('hidden');
+      if (q.isDecimal) {
+        standardInputContainer.classList.add('hidden');
+        decimalInputContainer.classList.remove('hidden');
+        inputDecimal.value = '';
+        inputDecimal.focus();
+      } else {
+        decimalInputContainer.classList.add('hidden');
+        standardInputContainer.classList.remove('hidden');
+        inputQuotient.value = '';
+        inputRemainder.value = '';
+        inputQuotient.focus();
+      }
+
+      // Navigation button availability
+      prevBtn.disabled = (index === 0);
+      nextBtn.disabled = (index === QUESTIONS.length - 1);
+
+      // Render Step list
+      renderSteps(q.steps);
+
+      // Hide steps panel by default on new question so Ethan tries first!
+      stepGuidePanel.classList.add('hidden');
+      stepsBtnText.textContent = "Show Steps";
+
+      // Update overall progress bar
+      updateProgressUI();
+    }
+
+    function renderSteps(steps) {
+      stepsList.innerHTML = '';
+      steps.forEach((step, idx) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200';
+        item.innerHTML = `
+          <div class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center shrink-0 text-[10px]">
+            ${idx + 1}
+          </div>
+          <div class="leading-relaxed">${step}</div>
+        `;
+        stepsList.appendChild(item);
+      });
+    }
+
+    function updateProgressUI() {
+      const percentage = (completedQuestions.size / QUESTIONS.length) * 100;
+      topProgressBar.style.width = `${percentage}%`;
+      completedCountLabel.textContent = `${completedQuestions.size} of 25 completed (${Math.round(percentage)}%)`;
+    }
+
+    function saveProgress() {
+      try {
+        localStorage.setItem('ethan_math_division_completed', JSON.stringify(Array.from(completedQuestions)));
+      } catch(e) {}
+    }
+
+    /* ========================================================
+       ANSWER CHECKING & FEEDBACK
+    ======================================================== */
+    checkAnswerBtn.addEventListener('click', () => {
+      audioEngine.click();
+      const q = QUESTIONS[currentQuestionIndex];
+      let isCorrect = false;
+
+      if (q.isDecimal) {
+        const userVal = parseFloat(inputDecimal.value.trim());
+        const expectedVal = parseFloat(q.decimalAnswer);
+        if (!isNaN(userVal) && Math.abs(userVal - expectedVal) < 0.001) {
+          isCorrect = true;
+        }
+      } else {
+        const userQ = parseInt(inputQuotient.value.trim(), 10);
+        const userR = parseInt(inputRemainder.value.trim() || '0', 10);
+        if (userQ === q.quotient && userR === q.remainder) {
+          isCorrect = true;
+        }
+      }
+
+      feedbackBanner.classList.remove('hidden');
+      if (isCorrect) {
+        audioEngine.success();
+        triggerConfetti();
+        completedQuestions.add(q.id);
+        saveProgress();
+        qStatusTag.classList.remove('hidden');
+        updateProgressUI();
+
+        feedbackBanner.className = 'mt-3 p-3 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-2';
+        feedbackIcon.className = 'fa-solid fa-circle-check text-emerald-600 text-base';
+        feedbackText.textContent = `Terrific job Ethan! That is 100% correct! (${q.dividend} ÷ ${q.divisor} = ${q.isDecimal ? q.decimalAnswer : (q.quotient + (q.remainder ? ' R ' + q.remainder : ''))})`;
+      } else {
+        audioEngine.error();
+        feedbackBanner.className = 'mt-3 p-3 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-2';
+        feedbackIcon.className = 'fa-solid fa-circle-xmark text-rose-600 text-base';
+        feedbackText.textContent = "Not quite yet Ethan! Check the scratchpad steps or click 'Show Steps' for help!";
+      }
+    });
+
+    // Enter key submit in inputs
+    [inputQuotient, inputRemainder, inputDecimal].forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          checkAnswerBtn.click();
+        }
+      });
+    });
+
+    // Toggle steps walkthrough
+    toggleStepsBtn.addEventListener('click', () => {
+      audioEngine.click();
+      if (stepGuidePanel.classList.contains('hidden')) {
+        stepGuidePanel.classList.remove('hidden');
+        stepsBtnText.textContent = "Hide Steps";
+      } else {
+        stepGuidePanel.classList.add('hidden');
+        stepsBtnText.textContent = "Show Steps";
+      }
+    });
+
+    // Next / Prev button events
+    prevBtn.addEventListener('click', () => {
+      if (currentQuestionIndex > 0) {
+        audioEngine.click();
+        renderQuestion(currentQuestionIndex - 1);
+      }
+    });
+    nextBtn.addEventListener('click', () => {
+      if (currentQuestionIndex < QUESTIONS.length - 1) {
+        audioEngine.click();
+        renderQuestion(currentQuestionIndex + 1);
+      }
+    });
+
+    // Sound toggle
+    soundToggleBtn.addEventListener('click', () => {
+      audioEngine.enabled = !audioEngine.enabled;
+      if (audioEngine.enabled) {
+        soundIcon.className = 'fa-solid fa-volume-high text-indigo-600';
+        audioEngine.click();
+      } else {
+        soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+      }
+    });
+
+    /* ========================================================
+       QUESTION CATALOG MODAL
+    ======================================================== */
+    function buildCatalog() {
+      const stageContainers = {
+        1: document.getElementById('catalogStage1'),
+        2: document.getElementById('catalogStage2'),
+        3: document.getElementById('catalogStage3'),
+        4: document.getElementById('catalogStage4'),
+        5: document.getElementById('catalogStage5')
+      };
+
+      // Clear existing
+      Object.values(stageContainers).forEach(el => el.innerHTML = '');
+
+      QUESTIONS.forEach((q, idx) => {
+        const isSolved = completedQuestions.has(q.id);
+        const btn = document.createElement('button');
+        btn.className = `p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center border transition ${
+          idx === currentQuestionIndex 
+            ? 'ring-2 ring-indigo-500 bg-indigo-50 border-indigo-300 text-indigo-800' 
+            : (isSolved 
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100')
+        }`;
+        
+        btn.innerHTML = `
+          <div class="flex items-center gap-1">
+            <span>Q${q.id}</span>
+            ${isSolved ? '<i class="fa-solid fa-check text-[10px] text-emerald-600"></i>' : ''}
+          </div>
+          <span class="text-[10px] text-slate-500 font-mono font-normal mt-0.5">${q.dividend}÷${q.divisor}</span>
+        `;
+
+        btn.addEventListener('click', () => {
+          audioEngine.click();
+          renderQuestion(idx);
+          catalogModal.classList.add('hidden');
+        });
+
+        if (stageContainers[q.stage]) {
+          stageContainers[q.stage].appendChild(btn);
+        }
+      });
+    }
+
+    openCatalogBtn.addEventListener('click', () => {
+      audioEngine.click();
+      buildCatalog();
+      catalogModal.classList.remove('hidden');
+    });
+
+    closeCatalogBtn.addEventListener('click', () => {
+      catalogModal.classList.add('hidden');
+    });
+
+    catalogModal.addEventListener('click', (e) => {
+      if (e.target === catalogModal) {
+        catalogModal.classList.add('hidden');
+      }
+    });
+
+    resetAllProgressBtn.addEventListener('click', () => {
+      completedQuestions.clear();
+      saveProgress();
+      renderQuestion(currentQuestionIndex);
+      buildCatalog();
+      updateProgressUI();
+    });
+
+    /* ========================================================
+       CONFETTI CELEBRATION EFFECT
+    ======================================================== */
+    function triggerConfetti() {
+      const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#3b82f6'];
+      for (let i = 0; i < 40; i++) {
+        const conf = document.createElement('div');
+        conf.className = 'confetti-piece';
+        conf.style.left = Math.random() * 100 + 'vw';
+        conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+        conf.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+        document.body.appendChild(conf);
+        setTimeout(() => conf.remove(), 2500);
+      }
+    }
+
+    /* ========================================================
+       INTERACTIVE WHITEBOARD CANVAS (Full Touch & Mouse)
+    ======================================================== */
+    const canvas = document.getElementById('paintCanvas');
+    const container = document.getElementById('canvasContainer');
+    const ctx = canvas.getContext('2d');
+
+    // Drawing Tool State
+    let currentTool = 'pen'; // 'pen', 'highlighter', 'eraser'
+    let currentColor = '#1e293b';
+    let currentLineWidth = 4;
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    // Undo History Buffer
+    const history = [];
+    const MAX_HISTORY = 20;
+
+    function saveCanvasState() {
+      if (history.length >= MAX_HISTORY) {
+        history.shift();
+      }
+      history.push(canvas.toDataURL());
+    }
+
+    function resizeCanvas() {
+      // Retain drawing across canvas resize
+      const tempImg = new Image();
+      const hasContent = history.length > 0;
+      if (hasContent) {
+        tempImg.src = canvas.toDataURL();
+      }
+
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+
+      ctx.scale(dpr, dpr);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (hasContent) {
+        tempImg.onload = () => {
+          ctx.drawImage(tempImg, 0, 0, rect.width, rect.height);
+        };
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    // Initial size after load
+    setTimeout(resizeCanvas, 50);
+
+    // Coordinate helpers (handling retina scale & offsets)
+    function getPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      let clientX = e.clientX;
+      let clientY = e.clientY;
+
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function startDrawing(e) {
+      // Prevent screen bouncing on touch devices while drawing
+      if (e.type.startsWith('touch')) {
+        e.preventDefault();
+      }
+      audioEngine.init();
+      isDrawing = true;
+      saveCanvasState();
+
+      const pos = getPointerPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+
+      // Draw a single dot immediately if user just taps
+      draw(e);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      if (e.type.startsWith('touch')) {
+        e.preventDefault();
+      }
+
+      const pos = getPointerPos(e);
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(pos.x, pos.y);
+
+      if (currentTool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = currentLineWidth * 5;
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+      } else if (currentTool === 'highlighter') {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = currentLineWidth * 3.5;
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)'; // Translucent sunny yellow
+      } else {
+        // Pen
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = currentLineWidth;
+        ctx.strokeStyle = currentColor;
+      }
+
+      ctx.stroke();
+      ctx.closePath();
+
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    // Attach mouse & touch listeners
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', stopDrawing);
+
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('touchend', stopDrawing);
+
+    /* ========================================================
+       CANVAS TOOLBAR CONTROLS
+    ======================================================== */
+    const toolPen = document.getElementById('toolPen');
+    const toolHighlighter = document.getElementById('toolHighlighter');
+    const toolEraser = document.getElementById('toolEraser');
+    const undoBtn = document.getElementById('undoBtn');
+    const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+    const toggleGridBtn = document.getElementById('toggleGridBtn');
+
+    function setActiveTool(tool) {
+      currentTool = tool;
+      [toolPen, toolHighlighter, toolEraser].forEach(btn => {
+        btn.className = 'tool-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shadow-xs flex items-center gap-1.5 transition';
+      });
+
+      if (tool === 'pen') {
+        toolPen.className = 'tool-btn active-tool px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-xs flex items-center gap-1.5 transition';
+      } else if (tool === 'highlighter') {
+        toolHighlighter.className = 'tool-btn active-tool px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-white shadow-xs flex items-center gap-1.5 transition';
+      } else if (tool === 'eraser') {
+        toolEraser.className = 'tool-btn active-tool px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 text-white shadow-xs flex items-center gap-1.5 transition';
+      }
+    }
+
+    toolPen.addEventListener('click', () => { audioEngine.click(); setActiveTool('pen'); });
+    toolHighlighter.addEventListener('click', () => { audioEngine.click(); setActiveTool('highlighter'); });
+    toolEraser.addEventListener('click', () => { audioEngine.click(); setActiveTool('eraser'); });
+
+    // Color Pickers
+    document.querySelectorAll('.color-picker-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        audioEngine.click();
+        currentColor = btn.getAttribute('data-color');
+        document.querySelectorAll('.color-picker-btn').forEach(b => b.classList.remove('ring-2', 'ring-indigo-500'));
+        btn.classList.add('ring-2', 'ring-indigo-500');
+        if (currentTool === 'eraser') {
+          setActiveTool('pen');
+        }
+      });
+    });
+
+    // Size Pickers
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        audioEngine.click();
+        currentLineWidth = parseInt(btn.getAttribute('data-size'), 10);
+        document.querySelectorAll('.size-btn').forEach(b => {
+          b.className = 'size-btn w-6 h-6 rounded flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100';
+        });
+        btn.className = 'size-btn w-6 h-6 rounded flex items-center justify-center font-bold bg-indigo-100 text-indigo-700';
+      });
+    });
+
+    // Undo action
+    undoBtn.addEventListener('click', () => {
+      if (history.length > 0) {
+        audioEngine.click();
+        const prevImgData = history.pop();
+        const img = new Image();
+        img.src = prevImgData;
+        img.onload = () => {
+          const rect = container.getBoundingClientRect();
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        };
+      }
+    });
+
+    // Clear Canvas action
+    clearCanvasBtn.addEventListener('click', () => {
+      audioEngine.click();
+      saveCanvasState();
+      const rect = container.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+    });
+
+    // Grid toggle (Grid -> Dots -> Blank)
+    const gridStyles = ['canvas-grid', 'canvas-dots', 'canvas-plain'];
+    let gridIndex = 0;
+    toggleGridBtn.addEventListener('click', () => {
+      audioEngine.click();
+      container.classList.remove(gridStyles[gridIndex]);
+      gridIndex = (gridIndex + 1) % gridStyles.length;
+      container.classList.add(gridStyles[gridIndex]);
+    });
+
+    // Initial render
+    renderQuestion(0);
+  </script>
+</body>
+</html>
